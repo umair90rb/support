@@ -1,5 +1,3 @@
-
-    
     const auth = firebase.auth();
     var db = firebase.firestore();
 
@@ -14,6 +12,8 @@
     const signInBtn = document.getElementById('signInBtn');
     const signOutBtn = document.getElementById('signOutBtn');
     const exportBtn = document.getElementById('exportBtn');
+    const addBtn = document.getElementById('addBtn');
+    const addUser = document.getElementById('addUser');
 
     var fileButton = document.getElementById('fileInput');
 
@@ -47,6 +47,37 @@
         });
     };
 
+    addUser.onclick = () => {
+        const name = document.getElementById('userNameInput').value;
+        const email = document.getElementById('userEmailInput').value;
+        const password = document.getElementById('userPasswordInput').value;
+
+        if(name == '' || email == '' || password == '') {
+            return alert('All fields required!');
+        }
+
+        auth.createUserWithEmailAndPassword(email, password).then(function(firebaseUser){
+            console.log(firebaseUser);
+            console.log(firebaseUser.user.uid);
+            db.collection('users').doc(`${firebaseUser.user.uid}`).set({
+
+                name:name,
+                email:email,
+                type:'support'
+
+            });
+        }).catch(err => alert(err.message));
+
+
+    }
+
+    function ValidateEmail(mail) 
+    {
+        const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(String(email).toLowerCase());
+    }
+
+
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
 
@@ -57,8 +88,9 @@
                     if (doc.data()['type'] == 'support') {
 
                         beforeLogin.hidden = true;
-                        supportLogin.hidden = false;
                         exportBtn.style.display = 'none';
+                        addBtn.style.display = 'none';
+                        supportLogin.hidden = false;
                         navbar.hidden = false;
                         heading.innerHTML = "Beacon Support"
                         getUsers(user);
@@ -68,6 +100,7 @@
                         beforeLogin.hidden = true;
                         supportLogin.hidden = false;
                         exportBtn.style.display = 'block';
+                        addBtn.style.display = 'block';
                         navbar.hidden = false;
                         heading.innerHTML = "Beacon Admin"
                         getUsers(user);
