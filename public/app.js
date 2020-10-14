@@ -69,7 +69,7 @@
         auth.createUserWithEmailAndPassword(email, password).then(function(firebaseUser){
             console.log(firebaseUser);
             console.log(firebaseUser.user.uid);
-            db.collection('users').doc(`${firebaseUser.user.uid}`).set({
+            db.collection('users').doc(`${firebaseUser.user.uid}`).add({
 
                 name:name,
                 email:email,
