@@ -114,8 +114,8 @@
                         messageInput.style.display = 'none';
                         navbar.hidden = false;
                         heading.innerHTML = "Beacon Admin"
-                        // getAdminUsers();
-                        getUsers(user);
+                        getAdminUsers();
+                        // getUsers(user);
 
                     }
                 } else {
@@ -151,33 +151,49 @@
      }
 
 
-     function getAdminUsers(){
+     async function getAdminUsers(){
 
         $('#usersList').empty();
         // console.log(user.uid);
-    
-        db.collection('messages').where('').get().then(function(querySnapshot) {
+        var supportUser;
+        var peerUser;
+        db.collection('conversations').get().then( function(querySnapshot) {
             console.log(querySnapshot);
             querySnapshot.forEach(doc => console.log(doc.data()));
-            // querySnapshot.forEach(function(doc) {
-            //     console.log(doc.id);
-            //     if (doc.data()['type'] == 'admin' || doc.id == user.uid) return;
-             
-            //     var html = `
-            //         <li class="active lighten-3 p-2" onclick="listenForMessages('${doc.id}')">
-            //           <a href="#"  class="d-flex justify-content-between"  >
-            //             <div class="text-small">
-            //               <strong>${doc.data()['name']}</strong>
-            //               <p class="last-message text-muted">${doc.data()['email']}</p>
-            //             </div>
-            //           </a>
-            //         </li>
-            //     `;
+            querySnapshot.forEach(async function(doc) {
+                await db.collection('users').doc(`${doc.data()['userId']}`).get().then(
+                    function(doc){
+                        supportUser = doc; 
+                    }
+                );
+                await db.collection('users').doc(`${doc.data()['peerId']}`).get().then(doc => peerUser = doc);
+                console.log(supportUser);
+                console.log(peerUser);
+                var html = `
+                    <li class="active lighten-3 p-2" onclick="listenForMessages('${doc.data()['peerId']}', '${doc.data()['userId']}')">
+                      <a href="#"  class="d-flex justify-content-between"  >
+                        <div class="row">
+                            <div class="col">
+                                <div class="text-small">
+                                    <strong>${supportUser.data()['name']}</strong>
+                                    <p class="last-message text-muted">${supportUser.data()['email']}</p>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="text-small">
+                                    <strong>${peerUser.data()['name']}</strong>
+                                    <p class="last-message text-muted">${peerUser.data()['email']}</p>
+                                </div>
+                            </div>
+                        </div>
+                      </a>
+                    </li>
+                `;
     
-            //     $('#usersList').append(html);
-            //     // doc.data() is never undefined for query doc snapshots
-            //     // console.log(doc.id, " => ", doc.data());
-            // });
+                $('#usersList').append(html);
+                // doc.data() is never undefined for query doc snapshots
+                // console.log(doc.id, " => ", doc.data());
+            });
             
         });
 
@@ -188,7 +204,7 @@
     function getUsers(user){
         $('#usersList').empty();
         // console.log(user.uid);
-    
+           
         db.collection("users").get().then(function(querySnapshot) {
             querySnapshot.forEach(function(doc) {
 
@@ -211,13 +227,14 @@
                 // console.log(doc.id, " => ", doc.data());
             });
         });
+
     
     }
 
     
 
     
-function listenForMessages(peer){
+function listenForMessages(peer, userId = null){
     selectedPeer = peer;
     let messagesRef;
     let unsubscribe;
@@ -240,12 +257,12 @@ function listenForMessages(peer){
                 // console.log(peer);
                 // console.log(currentUserType);
                 if (currentUserType == 'admin') {
-                    messagesRef = db.collection('messages').doc(`${supportUserId}-${peer}`);
+                    messagesRef = db.collection('messages').doc(`${userId}-${peer}`);
                     unsubscribe = messagesRef
                                 .collection('chat')
                                 .orderBy('createdAt')
                                 .onSnapshot(querySnapshot => {
-                                    if(querySnapshot.docs.length == 0) return alert("User has no conversation");
+                                    if(querySnapshot.docs.length == 0) return alert("Nothing to Show");
                                     const messages = querySnapshot.docs.map(doc => {
                                         data.push(doc.data()['message']);
                                         
@@ -269,6 +286,12 @@ function listenForMessages(peer){
                                     chatMessages.innerHTML = messages.join('');
                                     document.getElementById("chat-messages").scrollTop = document.getElementById("chat-messages").scrollHeight;
                             });
+                   if (currentUserType != 'admin') {
+                    db.collection('conversations').doc(`${user.uid}${peer}`).set({
+                        userId:user.uid,
+                        peerId:peer
+                    }).catch(err => console.log(err));
+                   }
                 }
                 
             
